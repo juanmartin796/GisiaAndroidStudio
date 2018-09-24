@@ -2,6 +2,7 @@
 #include <string>
 #include <android/NeuralNetworks.h>
 #include <float.h>
+#include <android/log.h>
 extern "C" JNIEXPORT jstring
 
 JNICALL
@@ -12,61 +13,74 @@ Java_gisia_martin_com_perceptron_MainActivity_stringFromJNI(
     return env->NewStringUTF(hello.c_str());
 }
 
-extern "C" JNIEXPORT void
+extern "C" JNIEXPORT jfloat
 JNICALL
 Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instance) {
     ANeuralNetworksModel* model = NULL;
-    ANeuralNetworksModel_create(&model);//
+    ANeuralNetworksModel_create(&model);
 
-    uint32_t dims[1] = {1};
+    uint32_t dims[1] = {3};
     // In our example, all our tensors are matrices of dimension [3][4].
-    ANeuralNetworksOperandType input1, input2, input3,sal;
-    input1.type= ANEURALNETWORKS_FLOAT32;
-    input1.scale = 0.f;
-    input1.zeroPoint = 0;
-    input1.dimensionCount = 1;
-    input1.dimensions = dims;
+    ANeuralNetworksOperandType entradas, pesos, sal, activacion;
+    entradas.type= ANEURALNETWORKS_FLOAT32;
+    entradas.scale = 0.f;
+    entradas.zeroPoint = 0;
+    entradas.dimensionCount = 1;
+    entradas.dimensions = dims;
 
-    input2.type= ANEURALNETWORKS_FLOAT32;
-    input2.scale = 0.f;
-    input2.zeroPoint = 0;
-    input2.dimensionCount = 1;
-    input2.dimensions = dims;
-
-    input3.type= ANEURALNETWORKS_INT32;
-    input3.scale = 0.f;
-    input3.zeroPoint = 0;
-    input3.dimensionCount = 0;
-    input3.dimensions = NULL;
+    pesos.type= ANEURALNETWORKS_TENSOR_FLOAT32;
+    pesos.scale = 0.f;
+    pesos.zeroPoint = 0;
+    pesos.dimensionCount= 1;
+    pesos.dimensions = dims;
 
     sal.type= ANEURALNETWORKS_FLOAT32;
     sal.scale = 0.f;
     sal.zeroPoint = 0;
-    sal.dimensionCount = 1;
-    sal.dimensions = dims;
+    sal.dimensionCount = 0;
+    sal.dimensions = nullptr;
+
+    activacion.type = ANEURALNETWORKS_INT32;
+    activacion.scale = 0.f;
+    activacion.zeroPoint = 0;
+    activacion.dimensionCount = 0;
+    activacion.dimensions = nullptr;
+
+
+
 
 
 
     // Now we add the seven operands, in the same order defined in the diagram.
-    ANeuralNetworksModel_addOperand(model, &input1);  // operand 0
-    ANeuralNetworksModel_addOperand(model, &input2);  // operand 1
-    ANeuralNetworksModel_addOperand(model, &input3);  // operand 1
-    ANeuralNetworksModel_addOperand(model, &sal); // operand 2
+    ANeuralNetworksModel_addOperand(model, &entradas);  // operand 0
+    ANeuralNetworksModel_addOperand(model, &pesos);  // operand 1
+    ANeuralNetworksModel_addOperand(model, &activacion);  // operand 2
+    ANeuralNetworksModel_addOperand(model, &sal); // operand 3
+
+    /*uint32_t ent[3] = {1,1,1};
+    const void *bufferEnt = ent;
+    ANeuralNetworksModel_setOperandValue(model, 0, bufferEnt, 3);*/
+
+    //uint32_t pes[3] = {2,1,1};
+    jfloat pes[3] = {-1.5,1.0,1.0};
+    const void *bufferPesos = pes;
+    ANeuralNetworksModel_setOperandValue(model, 1, bufferPesos, 3);
 
     // We set the values of the activation operands, in our example operands 2 and 5.
     int32_t noneValue = ANEURALNETWORKS_FUSED_NONE;
     ANeuralNetworksModel_setOperandValue(model, 2, &noneValue, sizeof(noneValue));
 
+
     // We have two operations in our example.
     // The first consumes operands 1, 0, 2, and produces operand 4.
     uint32_t addInputIndexes[3] = {0, 1,2};
     uint32_t addOutputIndexes[1] = {3};
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_ADD, 3, addInputIndexes, 1, addOutputIndexes);
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_MUL, 3, addInputIndexes, 1, addOutputIndexes);
 
     // Our model has one input (0) and one output (6).
-    uint32_t modelInputIndexes[2] = {0,1};
+    uint32_t modelInputIndexes[1] = {0};
     uint32_t modelOutputIndexes[1] = {3};
-    ANeuralNetworksModel_identifyInputsAndOutputs(model, 2, modelInputIndexes, 1 ,modelOutputIndexes);
+    ANeuralNetworksModel_identifyInputsAndOutputs(model, 1, modelInputIndexes, 1 ,modelOutputIndexes);
 
     ANeuralNetworksModel_finish(model);
 
@@ -78,7 +92,7 @@ Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instanc
     ANeuralNetworksCompilation_create(model, &compilation);
 
     // Ask to optimize for low power consumption.
-    ANeuralNetworksCompilation_setPreference(compilation, ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
+    ANeuralNetworksCompilation_setPreference(compilation, ANEURALNETWORKS_PREFER_LOW_POWER);
     ANeuralNetworksCompilation_finish(compilation);
 
 
@@ -88,8 +102,6 @@ Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instanc
     // Set the single input to our sample model. Since it is small, we won’t use a memory buffer.
     float myInput[3] = {1.0,1.0,1.0};
     ANeuralNetworksExecution_setInput(run1, 0, NULL, myInput, sizeof(myInput));
-    ANeuralNetworksExecution_setInput(run1, 1, NULL, myInput, sizeof(myInput));
-    //ANeuralNetworksExecution_setInput(run1, 2, NULL, myInput, sizeof(myInput));
     // Set the output.
     float myOutput[1];
     ANeuralNetworksExecution_setOutput(run1, 0, NULL, myOutput, sizeof(myOutput));
@@ -101,6 +113,8 @@ Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instanc
     ANeuralNetworksEvent_free(run1_end);
     ANeuralNetworksExecution_free(run1);
 
-
-
+    __android_log_print(ANDROID_LOG_VERBOSE, "SALIDA_PERCEPTRON",
+                        "La salida es (%E)",
+                        myOutput[0]);
+    return myOutput[0];
 }
