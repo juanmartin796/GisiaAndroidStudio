@@ -6,19 +6,11 @@
 #include <sstream>
 #include <iomanip>
 #include <fcntl.h>
-extern "C" JNIEXPORT jstring
 
-JNICALL
-Java_gisia_martin_com_perceptron_MainActivity_stringFromJNI(
-        JNIEnv *env,
-        jobject /* this */) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
-}
 
 extern "C" JNIEXPORT jfloat
 JNICALL
-Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instance) {
+Java_gisia_martin_com_perceptron_MainActivity_modelTraining(JNIEnv *env, jobject instance) {
 
     //Datos de entrenamiento. (x,x,y) representa los 2 valores de entrada de la operacion OR e Y representa la salida;
     float dataTraining[4][3] = {{0.0,0.0,0.0},{0.0,1.0,0.0},{1.0,0.0,0.0},{1.0,1.0,1.0}};
@@ -85,13 +77,12 @@ Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instanc
     ANeuralNetworksModel_setOperandValue(model, 0, bufferEnt, 3);*/
 
 
-    //float pes[2] = {1.0,1.0};
     float pes[2] = {1.0,1.0};
-    ANeuralNetworksModel_setOperandValue(model, 1, &pes, sizeof(pes));
+    //ANeuralNetworksModel_setOperandValue(model, 1, &pes, sizeof(pes));
 
-    //float biasBuf[1] = {-1.5};
     float biasBuf[1] = {-0.5};
-    ANeuralNetworksModel_setOperandValue(model, 2, &biasBuf, sizeof(biasBuf));
+    //ANeuralNetworksModel_setOperandValue(model, 2, &biasBuf, sizeof(biasBuf));
+
 
     // We set the values of the activation operands, in our example operands 2 and 5.
     int32_t noneValue = ANEURALNETWORKS_FUSED_NONE;
@@ -105,9 +96,9 @@ Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instanc
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_FULLY_CONNECTED, 4, addInputIndexes, 1, addOutputIndexes);
 
     // Our model has one input (0) and one output (6).
-    uint32_t modelInputIndexes[1] = {0};
+    uint32_t modelInputIndexes[3] = {0,1,2};
     uint32_t modelOutputIndexes[1] = {4};
-    ANeuralNetworksModel_identifyInputsAndOutputs(model, 1, modelInputIndexes, 1 ,modelOutputIndexes);
+    ANeuralNetworksModel_identifyInputsAndOutputs(model, 3, modelInputIndexes, 1 ,modelOutputIndexes);
 
     ANeuralNetworksModel_finish(model);
 
@@ -141,6 +132,8 @@ Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instanc
             float salidaDeseada = {dataTraining[i][2]};
 
             ANeuralNetworksExecution_setInput(run1, 0, NULL, myInput, sizeof(myInput));
+            ANeuralNetworksExecution_setInput(run1, 1, NULL, pes, 2);
+            ANeuralNetworksExecution_setInput(run1, 2, NULL, biasBuf, 1);
             // Set the output.
             float myOutput[1];
             ANeuralNetworksExecution_setOutput(run1, 0, NULL, myOutput, sizeof(myOutput));
@@ -166,11 +159,6 @@ Java_gisia_martin_com_perceptron_MainActivity_model(JNIEnv *env, jobject instanc
                 pes[1] = pes[1] + myInput[1]*d;
                 biasBuf[0] = biasBuf[0] + d;
             }
-
-            // Run the compiled model against a set of inputs.
-            ANeuralNetworksExecution* run1 = NULL;
-            ANeuralNetworksExecution_create(compilation, &run1);
-            // Set the single input to our sample model. Since it is small, we won’t use a memory buffer.
         }
         if (contErrores==0){
             break;

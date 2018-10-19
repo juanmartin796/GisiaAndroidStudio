@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Example of a call to a native method
         tvResultado = (TextView) findViewById(R.id.tvResultado);
-        float result = model();
+        float result = modelTraining();
         tvResultado.setText("El resultado es: "+ String.valueOf(result));
         Toast.makeText(this, "Resultado "+ result, Toast.LENGTH_LONG).show();
     }
@@ -31,5 +31,5 @@ public class MainActivity extends AppCompatActivity {
      */
     public native String stringFromJNI();
 
-    public native float model();
+    public native float modelTraining();
 }
