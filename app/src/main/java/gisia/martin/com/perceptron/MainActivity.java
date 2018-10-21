@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Example of a call to a native method
         tvResultado = (TextView) findViewById(R.id.tvResultado);
-        //convolucionModel();
+        convolucionModel();
         pool();
         //float result = modelTraining();
         float result = 2;

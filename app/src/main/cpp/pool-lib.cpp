@@ -1,4 +1,8 @@
 //
+// Created by juanm on 21/10/2018.
+//
+
+//
 // Created by juanm on 20/10/2018.
 //
 #include <jni.h>
@@ -12,33 +16,19 @@
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_gisia_martin_com_perceptron_MainActivity_convolucionModel(JNIEnv *env, jobject instance) {
+Java_gisia_martin_com_perceptron_MainActivity_pool(JNIEnv *env, jobject /* this */) {
 
     ANeuralNetworksModel* model = NULL;
     ANeuralNetworksModel_create(&model);
 
-    ANeuralNetworksOperandType input, filter, bias, padding, walkWidht, walkHeight, activation, output;
+    ANeuralNetworksOperandType input,padding,walkWidht, walkHeight, filterWidht, filterHeight, activation, output;
 
     input.type= ANEURALNETWORKS_TENSOR_FLOAT32;
     input.scale = 0.f;
     input.zeroPoint = 0;
     input.dimensionCount = 4;
-    uint32_t dimsInput[4] = {1,3,3,1}; //batches, height, width, depth_in
+    uint32_t dimsInput[4] = {1,4,4,1}; //batches, height, width, depth
     input.dimensions = dimsInput;
-
-    filter.type= ANEURALNETWORKS_TENSOR_FLOAT32;
-    filter.scale = 0.f;
-    filter.zeroPoint = 0;
-    filter.dimensionCount = 4;
-    uint32_t dimsFilter[4] = {1,2,2,1}; //depth_out, filter_height, filter_width, depth_in
-    filter.dimensions = dimsFilter;
-
-    bias.type= ANEURALNETWORKS_TENSOR_FLOAT32;
-    bias.scale = 0.f;
-    bias.zeroPoint = 0;
-    bias.dimensionCount = 1;
-    uint32_t dimsBias[1] = {1}; //depth_out
-    bias.dimensions = dimsBias;
 
     padding.type = ANEURALNETWORKS_INT32;
     padding.scale = 0.f;
@@ -57,6 +47,18 @@ Java_gisia_martin_com_perceptron_MainActivity_convolucionModel(JNIEnv *env, jobj
     walkHeight.zeroPoint = 0;
     walkHeight.dimensionCount = 0;
     walkHeight.dimensions = nullptr;
+
+    filterWidht.type = ANEURALNETWORKS_INT32;
+    filterWidht.scale = 0.f;
+    filterWidht.zeroPoint = 0;
+    filterWidht.dimensionCount = 0;
+    filterWidht.dimensions = nullptr;
+
+    filterHeight.type = ANEURALNETWORKS_INT32;
+    filterHeight.scale = 0.f;
+    filterHeight.zeroPoint = 0;
+    filterHeight.dimensionCount = 0;
+    filterHeight.dimensions = nullptr;
 
     activation.type = ANEURALNETWORKS_INT32;
     activation.scale = 0.f;
@@ -77,48 +79,51 @@ Java_gisia_martin_com_perceptron_MainActivity_convolucionModel(JNIEnv *env, jobj
 
 
     ANeuralNetworksModel_addOperand(model, &input);  // operand 0
-    ANeuralNetworksModel_addOperand(model, &filter);  // operand 1
-    ANeuralNetworksModel_addOperand(model, &bias);  // operand 2
-    ANeuralNetworksModel_addOperand(model, &padding);  // operand 3
-    ANeuralNetworksModel_addOperand(model, &walkWidht); // operand 4
-    ANeuralNetworksModel_addOperand(model, &walkHeight);  // operand 5
+    ANeuralNetworksModel_addOperand(model, &padding);  // operand 1
+    ANeuralNetworksModel_addOperand(model, &walkWidht); // operand 2
+    ANeuralNetworksModel_addOperand(model, &walkHeight);  // operand 3
+    ANeuralNetworksModel_addOperand(model, &filterWidht); // operand 4
+    ANeuralNetworksModel_addOperand(model, &filterHeight);  // operand 5
     ANeuralNetworksModel_addOperand(model, &activation); // operand 6
     ANeuralNetworksModel_addOperand(model, &output); // operand 7
 
 
 
 
-    //Input values
-    //float inputValues[9] = {23,34,32,23,43,43,23,12,188};
-    //ANeuralNetworksModel_setOperandValue(model, 0, &inputValues, sizeof(inputValues));
-    //Filter values
-    float filterValues[4]={0,1,1,0};
-    ANeuralNetworksModel_setOperandValue(model, 1, &filterValues, sizeof(filterValues));
-    //Bias values
-    float biasValues[1] = {0};
-    ANeuralNetworksModel_setOperandValue(model, 2, &biasValues, sizeof(biasValues));
-
-
-
     //Padding
     int32_t paddingValue = ANEURALNETWORKS_PADDING_VALID;
-    ANeuralNetworksModel_setOperandValue(model, 3, &paddingValue, sizeof(paddingValue));
+    ANeuralNetworksModel_setOperandValue(model, 1, &paddingValue, sizeof(paddingValue));
+
     //walkWidht
-    int32_t walkWidhtValue = 1;
-    ANeuralNetworksModel_setOperandValue(model, 4, &walkWidhtValue, sizeof(walkWidhtValue));
+    int32_t walkWidhtValue[1] = {2};
+    ANeuralNetworksModel_setOperandValue(model, 2, &walkWidhtValue, sizeof(walkWidhtValue));
+
     //walkHeight
-    int32_t walkHeightValue = 1;
-    ANeuralNetworksModel_setOperandValue(model, 5, &walkHeightValue, sizeof(walkHeightValue));
+    int32_t walkHeightValue[1] = {2};
+    ANeuralNetworksModel_setOperandValue(model, 3, &walkHeightValue, sizeof(walkHeightValue));
+
+    //Filter widht
+    int32_t filterWidhtValues[1]= {2};
+    ANeuralNetworksModel_setOperandValue(model, 4, &filterWidhtValues, sizeof(filterWidhtValues));
+
+    //Filer height
+    int32_t filterHeightValues[1] = {2};
+    ANeuralNetworksModel_setOperandValue(model, 5, &filterHeightValues, sizeof(filterHeightValues));
+
     //Funcion activacion
     int32_t noneValue = ANEURALNETWORKS_FUSED_NONE;
     ANeuralNetworksModel_setOperandValue(model, 6, &noneValue, sizeof(noneValue));
 
 
 
+
+
+
+
     //Operacion de convolucion
     uint32_t addInputIndexes[7] = {0,1,2,3,4,5,6};
     uint32_t addOutputIndexes[1] = {7};
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONV_2D, 7, addInputIndexes, 1, addOutputIndexes);
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_MAX_POOL_2D, 7, addInputIndexes, 1, addOutputIndexes);
 
 
     // Our model has one input (0) and one output (6).
@@ -139,7 +144,8 @@ Java_gisia_martin_com_perceptron_MainActivity_convolucionModel(JNIEnv *env, jobj
     ANeuralNetworksExecution_create(compilation, &run1);
 
 
-    float inputValues[1][3][3][1] = {23,34,32,23,43,43,23,12,12};
+    //float inputValues[16] = {2,5,1,8,4,1,9,7,6,8,1,4,2,8,4};
+    float inputValues[1][4][4][1] = {2,5,1,8,4,1,9,7,6,8,1,4,2,8,4,6};
     ANeuralNetworksExecution_setInput(run1, 0, NULL, inputValues, sizeof(inputValues));
     // Set the output.
     float myOutput[1][2][2][1];
