@@ -23,7 +23,7 @@ Java_gisia_martin_com_perceptron_MainActivity_convolucionModel(JNIEnv *env, jobj
     input.scale = 0.f;
     input.zeroPoint = 0;
     input.dimensionCount = 4;
-    uint32_t dimsInput[4] = {1,3,3,1}; //batches, height, width, depth_in
+    uint32_t dimsInput[4] = {1,5,5,1}; //batches, height, width, depth_in
     input.dimensions = dimsInput;
 
     filter.type= ANEURALNETWORKS_TENSOR_FLOAT32;
@@ -68,7 +68,7 @@ Java_gisia_martin_com_perceptron_MainActivity_convolucionModel(JNIEnv *env, jobj
     output.scale = 0.f;
     output.zeroPoint = 0;
     output.dimensionCount = 4;
-    uint32_t dimsOutput[4] = {1,2,2,1}; //batches, out_height, out_width, depth_out
+    uint32_t dimsOutput[4] = {1,4,4,1}; //batches, out_height, out_width, depth_out
     output.dimensions = dimsOutput;
 
 
@@ -139,10 +139,10 @@ Java_gisia_martin_com_perceptron_MainActivity_convolucionModel(JNIEnv *env, jobj
     ANeuralNetworksExecution_create(compilation, &run1);
 
 
-    float inputValues[1][3][3][1] = {23,34,32,23,43,43,23,12,12};
+    float inputValues[1][5][5][1] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
     ANeuralNetworksExecution_setInput(run1, 0, NULL, inputValues, sizeof(inputValues));
     // Set the output.
-    float myOutput[1][2][2][1];
+    float myOutput[1][4][4][1];
     ANeuralNetworksExecution_setOutput(run1, 0, NULL, myOutput, sizeof(myOutput));
 
 

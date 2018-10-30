@@ -21,6 +21,7 @@ add_library( # Sets the name of the library.
             src/main/cpp/training-lib.cpp
             src/main/cpp/pool-lib.cpp
             src/main/cpp/convolucion-lib.cpp
+            src/main/cpp/redConvolucion-lib.cpp
 
              )
 

@@ -120,7 +120,7 @@ Java_gisia_martin_com_perceptron_MainActivity_pool(JNIEnv *env, jobject /* this 
 
 
 
-    //Operacion de convolucion
+    //Operacion de pooling
     uint32_t addInputIndexes[7] = {0,1,2,3,4,5,6};
     uint32_t addOutputIndexes[1] = {7};
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_MAX_POOL_2D, 7, addInputIndexes, 1, addOutputIndexes);
@@ -148,9 +148,10 @@ Java_gisia_martin_com_perceptron_MainActivity_pool(JNIEnv *env, jobject /* this 
     float inputValues[1][4][4][1] = {2,5,1,8,4,1,9,7,6,8,1,4,2,8,4,6};
     ANeuralNetworksExecution_setInput(run1, 0, NULL, inputValues, sizeof(inputValues));
     // Set the output.
+
+
     float myOutput[1][2][2][1];
     ANeuralNetworksExecution_setOutput(run1, 0, NULL, myOutput, sizeof(myOutput));
-
 
 
     // Starts the work. The work proceeds asynchronously.

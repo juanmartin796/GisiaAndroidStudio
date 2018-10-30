@@ -20,8 +20,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Example of a call to a native method
         tvResultado = (TextView) findViewById(R.id.tvResultado);
-        convolucionModel();
-        pool();
+        //convolucionModel();
+        //pool();
+        redConvolucion();
         //float result = modelTraining();
         float result = 2;
         tvResultado.setText("El resultado es: "+ String.valueOf(result));
@@ -39,4 +40,6 @@ public class MainActivity extends AppCompatActivity {
     public native void convolucionModel();
 
     public native void pool();
+
+    public native void redConvolucion();
 }

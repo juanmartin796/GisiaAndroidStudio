@@ -187,3 +187,4 @@ Java_gisia_martin_com_perceptron_MainActivity_modelTraining(JNIEnv *env, jobject
     return result;*/
     return myOutput[0];
 }
+
