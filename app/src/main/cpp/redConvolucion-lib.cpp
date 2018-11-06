@@ -9,10 +9,17 @@
 #include <sstream>
 #include <iomanip>
 #include <fcntl.h>
+#include <android/log.h>
+
+#include <android/sharedmem.h>
+#include <sys/mman.h>
+#include <android/bitmap.h>
+#include <sys/stat.h>
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobject instance) {
+    
     ANeuralNetworksModel* model = NULL;
     ANeuralNetworksModel_create(&model);
 
@@ -207,9 +214,19 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     ANeuralNetworksExecution* run1 = NULL;
     ANeuralNetworksExecution_create(compilation, &run1);
 
+    ANeuralNetworksMemory* mem1 = NULL;
+    //int fd = open("/sdcard/94cdfb1955d225502630fb0f110eaf4c.jpg", O_RDONLY);
+    int fd = open("/sdcard/IMAGENESCUERO/e.bmp", O_RDONLY);
+    struct stat sb;
+    fstat(fd, &sb);
+    off_t buffer_size_bytes_ = sb.st_size;
+    ANeuralNetworksMemory_createFromFd(buffer_size_bytes_, PROT_READ, fd, 0, &mem1);
 
     float inputValues[1][5][5][1] = {23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,345,34,5345,34,5,345,34,5};
-    ANeuralNetworksExecution_setInput(run1, 0, NULL, inputValues, sizeof(inputValues));
+    //ANeuralNetworksExecution_setInput(run1, 0, NULL, bitmapByte, sizeof(bitmapByte));
+    //ANeuralNetworksExecution_setInput(run1, 0, NULL, jd, 100);
+    ANeuralNetworksExecution_setInputFromMemory(run1, 0, NULL, mem1, 0, buffer_size_bytes_);
+
     // Set the outputConvolucion.
     float myOutput[1][2][2][1];
     ANeuralNetworksExecution_setOutput(run1, 0, NULL, myOutput, sizeof(myOutput));
@@ -223,4 +240,5 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     ANeuralNetworksEvent_wait(run1_end);
     ANeuralNetworksEvent_free(run1_end);
     ANeuralNetworksExecution_free(run1);
+    __android_log_print(ANDROID_LOG_VERBOSE, "RedConvolucion", "Termino la convolucion", 1);
 }
