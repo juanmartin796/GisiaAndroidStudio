@@ -28,22 +28,23 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
             filterWidht, filterHeight, outputPooling,
             paddingPooling, walkWidhtPooling, walkHeightPooling;
 
-    inputConvolucion.type= ANEURALNETWORKS_TENSOR_FLOAT32;
-    inputConvolucion.scale = 0.f;
+    inputConvolucion.type= ANEURALNETWORKS_TENSOR_QUANT8_ASYMM;
+    inputConvolucion.scale = 1;
     inputConvolucion.zeroPoint = 0;
     inputConvolucion.dimensionCount = 4;
-    uint32_t dimsInput[4] = {1,5,5,1}; //batches, height, width, depth_in
+    uint32_t dimsInput[4] = {1,1503,2136,3}; //batches, height, width, depth_in
+    //uint32_t dimsInput[4] = {1,5,5,3}; //batches, height, width, depth_in
     inputConvolucion.dimensions = dimsInput;
 
-    filterConvolucion.type= ANEURALNETWORKS_TENSOR_FLOAT32;
-    filterConvolucion.scale = 0.f;
+    filterConvolucion.type= ANEURALNETWORKS_TENSOR_QUANT8_ASYMM;
+    filterConvolucion.scale = 1;
     filterConvolucion.zeroPoint = 0;
     filterConvolucion.dimensionCount = 4;
-    uint32_t dimsFilter[4] = {1,2,2,1}; //depth_out, filter_height, filter_width, depth_in
+    uint32_t dimsFilter[4] = {1,2,2,3}; //depth_out, filter_height, filter_width, depth_in
     filterConvolucion.dimensions = dimsFilter;
 
-    biasCovolucion.type= ANEURALNETWORKS_TENSOR_FLOAT32;
-    biasCovolucion.scale = 0.f;
+    biasCovolucion.type= ANEURALNETWORKS_TENSOR_INT32;
+    biasCovolucion.scale = 1;
     biasCovolucion.zeroPoint = 0;
     biasCovolucion.dimensionCount = 1;
     uint32_t dimsBias[1] = {1}; //depth_out
@@ -73,11 +74,12 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     activation.dimensionCount = 0;
     activation.dimensions = nullptr;
 
-    outputConvolucion.type= ANEURALNETWORKS_TENSOR_FLOAT32;
-    outputConvolucion.scale = 0.f;
+    outputConvolucion.type= ANEURALNETWORKS_TENSOR_QUANT8_ASYMM;
+    outputConvolucion.scale = 2;
     outputConvolucion.zeroPoint = 0;
     outputConvolucion.dimensionCount = 4;
-    uint32_t dimsOutputConvolution[4] = {1,4,4,1}; //batches, out_height, out_width, depth_out
+    //uint32_t dimsOutputConvolution[4] = {1,4,4,1}; //batches, out_height, out_width, depth_out
+    uint32_t dimsOutputConvolution[4] = {1,1502,2135,1}; //batches, out_height, out_width, depth_out
     outputConvolucion.dimensions = dimsOutputConvolution;
 
     filterWidht.type = ANEURALNETWORKS_INT32;
@@ -92,11 +94,12 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     filterHeight.dimensionCount = 0;
     filterHeight.dimensions = nullptr;
 
-    outputPooling.type= ANEURALNETWORKS_TENSOR_FLOAT32;
-    outputPooling.scale = 0.f;
+    outputPooling.type= ANEURALNETWORKS_TENSOR_QUANT8_ASYMM;
+    outputPooling.scale = 1;
     outputPooling.zeroPoint = 0;
     outputPooling.dimensionCount = 4;
-    uint32_t dimsOutputPooling[4] = {1,2,2,1}; //batches, out_height, out_width, depth_out
+    //uint32_t dimsOutputPooling[4] = {1,2,2,1}; //batches, out_height, out_width, depth_out
+    uint32_t dimsOutputPooling[4] = {1,751,1067,1}; //batches, out_height, out_width, depth_out
     outputPooling.dimensions = dimsOutputPooling;
 
 
@@ -140,9 +143,8 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     ANeuralNetworksModel_addOperand(model, &walkHeightPooling);  // operand 13
 
 
-
     //Filter values
-    float filterValues[4]={0,1,1,0};
+    jbyte filterValues[12]={0,1,1,0,0,1,1,0,0,1,1,0};
     ANeuralNetworksModel_setOperandValue(model, 1, &filterValues, sizeof(filterValues));
     //Bias values
     float biasValues[1] = {0};
@@ -169,16 +171,12 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     int32_t filterHeightValues[1] = {2};
     ANeuralNetworksModel_setOperandValue(model, 9, &filterHeightValues, sizeof(filterHeightValues));
 
-
-    //Padding
     int32_t paddingValuePooling = ANEURALNETWORKS_PADDING_VALID;
     ANeuralNetworksModel_setOperandValue(model, 11, &paddingValuePooling, sizeof(paddingValuePooling));
 
-    //walkWidht
     int32_t walkWidhtValuePooling[1] = {2};
     ANeuralNetworksModel_setOperandValue(model, 12, &walkWidhtValuePooling, sizeof(walkWidhtValuePooling));
 
-    //walkHeight
     int32_t walkHeightValuePooling[1] = {2};
     ANeuralNetworksModel_setOperandValue(model, 13, &walkHeightValuePooling, sizeof(walkHeightValuePooling));
 
@@ -222,13 +220,17 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     off_t buffer_size_bytes_ = sb.st_size;
     ANeuralNetworksMemory_createFromFd(buffer_size_bytes_, PROT_READ, fd, 0, &mem1);
 
-    float inputValues[1][5][5][1] = {23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,345,34,5345,34,5,345,34,5};
-    //ANeuralNetworksExecution_setInput(run1, 0, NULL, bitmapByte, sizeof(bitmapByte));
-    //ANeuralNetworksExecution_setInput(run1, 0, NULL, jd, 100);
-    ANeuralNetworksExecution_setInputFromMemory(run1, 0, NULL, mem1, 0, buffer_size_bytes_);
+    /*jbyte inputValues[1][5][5][3] = {23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,34,34,53,34,5,34,34,5,
+                                     23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,34,34,53,34,5,34,34,5,
+                                     23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,34,34,53,34,5,34,34,5};
+*/
+    ANeuralNetworksExecution_setInputFromMemory(run1, 0, NULL, mem1, 54, buffer_size_bytes_-54);
+    //ANeuralNetworksExecution_setInput(run1,0,NULL,inputValues, sizeof(inputValues));
 
     // Set the outputConvolucion.
-    float myOutput[1][2][2][1];
+    //float myOutput[1][1503][2135][3];
+    //jbyte myOutput[1][1502][2135][1];
+    jbyte myOutput[1][751][1067][1];
     ANeuralNetworksExecution_setOutput(run1, 0, NULL, myOutput, sizeof(myOutput));
 
 
