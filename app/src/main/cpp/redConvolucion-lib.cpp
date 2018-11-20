@@ -16,9 +16,52 @@
 #include <android/bitmap.h>
 #include <sys/stat.h>
 
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobject instance) {
+
+    //##################################   PARAMETROS PARA LA IMAGEN DE ENTRADA   ###########################
+
+    const char pathImage[28] = "/sdcard/IMAGENESCUERO/e.bmp";
+    int const offset = 54; //EN ESTE CASO ES 54 PORQUE ES UN ARCHIVO BMP, Y LOS PRIMEROS 54 BYTES NO SE UTILIZAN PORQUE NO SON INFORMACION DE PIXELES
+    int const widthInputPixels = 2136;
+    int const heightInputPixel = 1503;
+    int const channelsInputNum = 3;
+
+    //############################   PARAMETROS PARA LA OPERACION DE CONVOLUCION #############################
+
+    int const filterwidhtNum = 2;
+    int const filterHeightNum = 2;
+    int const widhtOutputPixelsConvolution = widthInputPixels - filterwidhtNum + 1;
+    int const heightOutputPixelsConvolution = heightInputPixel - filterHeightNum + 1;
+
+    //#################################  PARAMETROS PARA LA OPERACION DE POOLING  #######################
+
+    int const filterWidhtValuesVentanaPooling = 2;
+    int const filterHeightValuesVentanaPooling = 2;
+    int const widhtOutputPixelsPooling = widhtOutputPixelsConvolution / filterWidhtValuesVentanaPooling;
+    int const heightOutputPixelsPooling = heightOutputPixelsConvolution / filterHeightValuesVentanaPooling;
+
+    //######################### SE DEFINE EL FILTRO A APLICAR PARA EN LA CONVOLUCION. ALTO * ANCHO * PROFUNDIDAD #############
+
+    jbyte filterValues[filterwidhtNum * filterHeightNum * channelsInputNum]={0,1,1,0,0,1,1,0,0,1,1,0};
+
+    //#####################################  FIN DE LOS PARAMETROS #######################################
+
+
+
+
+    ANeuralNetworksMemory* mem1 = NULL;
+    int fd = open(pathImage, O_RDONLY);
+    struct stat sb;
+    fstat(fd, &sb);
+    off_t buffer_size_bytes_ = sb.st_size;
+    ANeuralNetworksMemory_createFromFd(buffer_size_bytes_, PROT_READ, fd, 0, &mem1);
+    int const tamanoMemoria = buffer_size_bytes_-offset;
+    
+
+
     
     ANeuralNetworksModel* model = NULL;
     ANeuralNetworksModel_create(&model);
@@ -32,7 +75,7 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     inputConvolucion.scale = 1;
     inputConvolucion.zeroPoint = 0;
     inputConvolucion.dimensionCount = 4;
-    uint32_t dimsInput[4] = {1,1503,2136,3}; //batches, height, width, depth_in
+    uint32_t dimsInput[4] = {1,heightInputPixel,widthInputPixels,channelsInputNum}; //batches, height, width, depth_in
     //uint32_t dimsInput[4] = {1,5,5,3}; //batches, height, width, depth_in
     inputConvolucion.dimensions = dimsInput;
 
@@ -40,7 +83,7 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     filterConvolucion.scale = 1;
     filterConvolucion.zeroPoint = 0;
     filterConvolucion.dimensionCount = 4;
-    uint32_t dimsFilter[4] = {1,2,2,3}; //depth_out, filter_height, filter_width, depth_in
+    uint32_t dimsFilter[4] = {1,filterHeightNum, filterwidhtNum,channelsInputNum}; //depth_out, filter_height, filter_width, depth_in
     filterConvolucion.dimensions = dimsFilter;
 
     biasCovolucion.type= ANEURALNETWORKS_TENSOR_INT32;
@@ -79,7 +122,7 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     outputConvolucion.zeroPoint = 0;
     outputConvolucion.dimensionCount = 4;
     //uint32_t dimsOutputConvolution[4] = {1,4,4,1}; //batches, out_height, out_width, depth_out
-    uint32_t dimsOutputConvolution[4] = {1,1502,2135,1}; //batches, out_height, out_width, depth_out
+    uint32_t dimsOutputConvolution[4] = {1,heightOutputPixelsConvolution,widhtOutputPixelsConvolution,1}; //batches, out_height, out_width, depth_out
     outputConvolucion.dimensions = dimsOutputConvolution;
 
     filterWidht.type = ANEURALNETWORKS_INT32;
@@ -99,7 +142,7 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     outputPooling.zeroPoint = 0;
     outputPooling.dimensionCount = 4;
     //uint32_t dimsOutputPooling[4] = {1,2,2,1}; //batches, out_height, out_width, depth_out
-    uint32_t dimsOutputPooling[4] = {1,751,1067,1}; //batches, out_height, out_width, depth_out
+    uint32_t dimsOutputPooling[4] = {1,heightOutputPixelsPooling,widhtOutputPixelsPooling,1}; //batches, out_height, out_width, depth_out
     outputPooling.dimensions = dimsOutputPooling;
 
 
@@ -144,7 +187,6 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
 
 
     //Filter values
-    jbyte filterValues[12]={0,1,1,0,0,1,1,0,0,1,1,0};
     ANeuralNetworksModel_setOperandValue(model, 1, &filterValues, sizeof(filterValues));
     //Bias values
     float biasValues[1] = {0};
@@ -165,19 +207,19 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     ANeuralNetworksModel_setOperandValue(model, 6, &noneValue, sizeof(noneValue));
 
 
-    int32_t filterWidhtValues[1]= {2};
+    int32_t filterWidhtValues[1]= {filterWidhtValuesVentanaPooling};
     ANeuralNetworksModel_setOperandValue(model, 8, &filterWidhtValues, sizeof(filterWidhtValues));
 
-    int32_t filterHeightValues[1] = {2};
+    int32_t filterHeightValues[1] = {filterHeightValuesVentanaPooling};
     ANeuralNetworksModel_setOperandValue(model, 9, &filterHeightValues, sizeof(filterHeightValues));
 
     int32_t paddingValuePooling = ANEURALNETWORKS_PADDING_VALID;
     ANeuralNetworksModel_setOperandValue(model, 11, &paddingValuePooling, sizeof(paddingValuePooling));
 
-    int32_t walkWidhtValuePooling[1] = {2};
+    int32_t walkWidhtValuePooling[1] = {filterWidhtValuesVentanaPooling};
     ANeuralNetworksModel_setOperandValue(model, 12, &walkWidhtValuePooling, sizeof(walkWidhtValuePooling));
 
-    int32_t walkHeightValuePooling[1] = {2};
+    int32_t walkHeightValuePooling[1] = {filterHeightValuesVentanaPooling};
     ANeuralNetworksModel_setOperandValue(model, 13, &walkHeightValuePooling, sizeof(walkHeightValuePooling));
 
 
@@ -212,25 +254,20 @@ Java_gisia_martin_com_perceptron_MainActivity_redConvolucion(JNIEnv *env, jobjec
     ANeuralNetworksExecution* run1 = NULL;
     ANeuralNetworksExecution_create(compilation, &run1);
 
-    ANeuralNetworksMemory* mem1 = NULL;
-    //int fd = open("/sdcard/94cdfb1955d225502630fb0f110eaf4c.jpg", O_RDONLY);
-    int fd = open("/sdcard/IMAGENESCUERO/e.bmp", O_RDONLY);
-    struct stat sb;
-    fstat(fd, &sb);
-    off_t buffer_size_bytes_ = sb.st_size;
-    ANeuralNetworksMemory_createFromFd(buffer_size_bytes_, PROT_READ, fd, 0, &mem1);
+
 
     /*jbyte inputValues[1][5][5][3] = {23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,34,34,53,34,5,34,34,5,
                                      23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,34,34,53,34,5,34,34,5,
                                      23,34,32,23,43,43,23,12,12,13,2,3,4,5,2,34,5,34,34,53,34,5,34,34,5};
 */
-    ANeuralNetworksExecution_setInputFromMemory(run1, 0, NULL, mem1, 54, buffer_size_bytes_-54);
+    ANeuralNetworksExecution_setInputFromMemory(run1, 0, NULL, mem1, offset, tamanoMemoria);
     //ANeuralNetworksExecution_setInput(run1,0,NULL,inputValues, sizeof(inputValues));
 
     // Set the outputConvolucion.
     //float myOutput[1][1503][2135][3];
     //jbyte myOutput[1][1502][2135][1];
-    jbyte myOutput[1][751][1067][1];
+    //jbyte myOutput[1][751][1067][1];
+    jbyte myOutput[1][heightOutputPixelsPooling][widhtOutputPixelsPooling][1];
     ANeuralNetworksExecution_setOutput(run1, 0, NULL, myOutput, sizeof(myOutput));
 
 
